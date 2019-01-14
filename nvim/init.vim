@@ -170,9 +170,6 @@ filetype plugin indent on
     let g:seoul256_background = 233
     "let g:onedark_termcolors=256
 
-
-
-
     packadd minpac
     call minpac#init()
 
@@ -186,6 +183,16 @@ filetype plugin indent on
       endif
     endfunction
 
+    " insert or delete brackets, parens, quotes in pair
+    call minpac#add('jiangmiao/auto-pairs')
+
+    " mappings to easily delete, change and add such surroundings in pairs, such as quotes, parens, etc.
+    call minpac#add('tpope/vim-surround')
+
+    " endings for html, xml, etc. - chances surround
+    call minpac#add('tpope/vim-ragtag')
+
+    " mappings wichi are simply short normal mode aliases for commly used ex commands
     call Add('tpope/vim-unimpaired')
     call minpac#add('tpope/vim-scriptease', {'type': 'opt'})
 
@@ -193,9 +200,47 @@ filetype plugin indent on
     command! PackClean call minpac#clean()
 
 
-    " Finding files fuzzy
-    call Add('junegunn/fzf')
-    nnoremap <C-p> :<C-u>FZF<CR>
+    " FZF {{{
+      " Finding files fuzzy
+      call minpac#add('/usr/local/opt/fzf')
+      call Add('junegunn/fzf.vim')
+      let g:fzf_layout = { 'down': '~25%' }
+      nnoremap <C-p> :<C-u>FZF<CR>
+
+      nmap <silent> <leader>r :Buffers<cr>
+      nmap <silent> <leader>t :FZFMru<cr>
+
+      " Mapping selecting mappings
+      nmap <leader><tab> <plug>(fzf-maps-n)
+      xmap <leader><tab> <plug>(fzf-maps-x)
+      omap <leader><tab> <plug>(fzf-maps-o)
+      
+      " Insert mode completion
+      imap <c-x><c-k> <plug>(fzf-complete-word)
+      imap <c-x><c-f> <plug>(fzf-complete-path)
+      imap <c-x><c-j> <plug>(fzf-complete-file-ag)
+      imap <c-x><c-l> <plug>(fzf-complete-line)
+
+      nnoremap <silent> <Leader>C :call fzf#run({
+            \	'source':
+            \	  map(split(globpath(&rtp, "colors/*.vim"), "\n"),
+            \		  "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')"),
+            \	'sink':    'colo',
+            \	'options': '+m',
+            \	'left':    30
+            \ })<CR>
+
+      command! -bang -nargs=* Find call fzf#vim#grep(
+            \ 'rg --column --line-number --no-heading --follow --color=always '.<q-args>, 1,
+            \ <bang>0 ? fzf#vim#with_preview('up:60%') : fzf#vim#with_preview('right:50%:hidden', '?'), <bang>0)
+      " }}}
+
+      command! FZFMru call fzf#run({
+            \  'source':  v:oldfiles,
+            \  'sink':	  'e',
+            \  'options': '-m -x +s',
+      \  'down':	  '40%'})
+    " }}}
 
     " Finding files semantically using .projections.json
     call Add('tpope/vim-projectionist')
@@ -205,6 +250,7 @@ filetype plugin indent on
 
     " Dispatch
     call Add('tpope/vim-dispatch')
+    let g:dispatch_compilers = { 'jest': 'jest-cli' }
 
     " Goyo
     " Distraction-free environment
@@ -246,7 +292,7 @@ filetype plugin indent on
       nmap <silent> <leader>y :NERDTreeFind<cr>
 
       autocmd StdinReadPre * let s:std_in=1
-      autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+      "autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 
       let NERDTreeShowHidden=1
       let g:NERDTreeIndicatorMapCustom = {
@@ -274,44 +320,63 @@ filetype plugin indent on
     " }}}
 
     " Grepper {{{
-      call Add('mhinz/vim-grepper')
-      let g:grepper = {}
-      let g:grepper.tools = ['grep', 'git', 'rg']
+        call Add('mhinz/vim-grepper')
+        let g:grepper = {}
+        let g:grepper.tools = ['grep', 'git', 'rg']
 
-      " Search for the current word
-      nnoremap <leader>* :Grepper -cword -noprompt<CR>
+        " Search for the current word
+        nnoremap <leader>* :Grepper -cword -noprompt<CR>
 
-      " Search for the current selection
-      nmap gs <plug>(GrepperOperator)
-      xmap gs <plug>(GrepperOperator)
+        " Search for the current selection
+        nmap gs <plug>(GrepperOperator)
+        xmap gs <plug>(GrepperOperator)
     " }}}
 
     " vim-prettier {{{
-    call Add('prettier/vim-prettier', {
-          \ 'for': ['javascript', 'typescript', 'css', 'less', 'scss'] })
-    let g:prettier#autoformat = 0
-    autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html PrettierAsync
+      call Add('prettier/vim-prettier', {
+            \ 'for': ['javascript', 'typescript', 'css', 'less', 'scss'] })
+      let g:prettier#autoformat = 0
+      autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html PrettierAsync
     " }}}
 
-    " Ultisnips {{{
-    call Add('SirVer/ultisnips')
-    " Trigger configuration. Do not use <tab> if you use https://github.com/Valloric/YouCompleteMe.
-    let g:UltiSnipsExpandTrigger="<tab>"
-    let g:UltiSnipsJumpForwardTrigger="<c-b>"
-    let g:UltiSnipsJumpBackwardTrigger="<c-z>"
 
-    " If you want :UltiSnipsEdit to split your window.
-    let g:UltiSnipsEditSplit="vertical"
-    " FIXME - Proper path is needed
-    let g:UltiSnipsSnippetDirectories = [$HOME.'/workspace/env/vim/UltiSnips', 'UltiSnips']
+    " vim-easy-align {{{
+      " east to use vim alignment
+      call Add('junegunn/vim-easy-align')
+      xmap ga <plug>(EasyAlign)
+      nmap ga <plug>(EasyAlign)
+    " }}}
+
+
+    " Ultisnips {{{
+      call Add('SirVer/ultisnips')
+      " Trigger configuration. Do not use <tab> if you use https://github.com/Valloric/YouCompleteMe.
+      let g:UltiSnipsExpandTrigger="<tab>"
+      let g:UltiSnipsJumpForwardTrigger="<c-b>"
+      let g:UltiSnipsJumpBackwardTrigger="<c-z>"
+
+      " If you want :UltiSnipsEdit to split your window.
+      let g:UltiSnipsEditSplit="vertical"
+      " FIXME - Proper path is needed
+      let g:UltiSnipsSnippetDirectories = [$HOME.'/.config/nvim/UltiSnips']
+    " }}}
+
+    " vim-test {{{
+      call minpac#add("janko-m/vim-test") 
+      let g:test#strategy = "dispatch"
+      nmap <silent> t<C-n> :TestNearest<CR>
+      nmap <silent> t<C-f> :TestFile<CR>
+      nmap <silent> t<C-s> :TestSuite<CR>
+      nmap <silent> t<C-l> :TestLast<CR>
+      nmap <silent> t<C-g> :TestVist<CR>
     " }}}
 
     " Theme
     " Color {{{
-    " After loaded all plugins
-    call Add('junegunn/seoul256.vim')
-    packloadall
-    colorscheme seoul256
+      " After loaded all plugins
+      call Add('junegunn/seoul256.vim')
+      packloadall
+      colorscheme seoul256
     " }}}
 
 
@@ -323,3 +388,31 @@ filetype plugin indent on
     highlight Type cterm=italic
     highlight Normal ctermbg=none
 
+    " LANGUAGE
+    " Javasript {{{
+   
+      set path=.,src,app
+      set suffixesadd=.js,.jsx
+      function! LoadMainNodeModule(fname)
+        let nodeModules = './node_modules/'
+        let app = './app/'
+        let packageJsonPath = nodeModules . a:fname . '/package.json'
+        let appPath = app . a:fname
+        let appPathWithIndex = app . a:fname . '/index.js'
+
+        echom appPath
+        echom appPathWithIndex
+
+        if filereadable(packageJsonPath)
+          return nodeModules . a:fname . "/" . json_decode(join(readfile(packageJsonPath))).main
+        elseif filereadable(appPath)
+          return appPath
+        elseif filereadable(appPathWithIndex)
+          return appPathWithIndex
+        else 
+          return nodeModules . a:fname
+        endif
+      endfunction
+
+      set includeexpr=LoadMainNodeModule(v:fname)
+    " }}}
